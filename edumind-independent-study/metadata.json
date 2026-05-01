@@ -1,0 +1,6 @@
+{
+  "name": "EduMind Independent Study",
+  "description": "Uma plataforma moderna de estudo independente com suporte de IA para cursos e trilhas de aprendizagem.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["AI-powered study summaries", "Course management", "JWT Authentication"]
+}
