@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from './AuthContext';
 import { AuthForms } from './components/AuthForms';
 import { CourseViewer } from './components/CourseViewer';
 import { Course } from './types';
+import { supabase } from './lib/supabase';
 
 const AppContent = () => {
   const { isAuthenticated, isLoading, logout } = useAuth();
@@ -12,22 +13,21 @@ const AppContent = () => {
 
   useEffect(() => {
     if (isAuthenticated) {
-      fetch('/api/courses')
-        .then(res => res.ok ? res.json() : [])
-        .then(data => {
-          if (Array.isArray(data)) {
-            setCourses(data);
-          } else {
-            setCourses([]);
-          }
-        })
-        .catch(() => setCourses([]));
+      const fetchCourses = async () => {
+        const { data, error } = await supabase.from('courses').select('*').order('id', { ascending: true });
+        if (error) {
+          console.error("Error fetching courses", error);
+          setCourses([]);
+        } else {
+          setCourses(data || []);
+        }
+      };
+      fetchCourses();
     }
   }, [isAuthenticated]);
 
   const handleLogout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' });
-    logout();
+    await logout();
   };
 
   if (isLoading) {
@@ -78,4 +78,3 @@ export default function App() {
     </AuthProvider>
   );
 }
-
