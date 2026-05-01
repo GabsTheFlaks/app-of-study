@@ -18,6 +18,9 @@ export default defineConfig(({mode}) => {
     server: {
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
       hmr: process.env.DISABLE_HMR !== 'true',
+      host: true, // Listens on all local IPs (fixes some Windows localhost issues)
+      port: 5173,
+      strictPort: true,
     },
   };
 });
