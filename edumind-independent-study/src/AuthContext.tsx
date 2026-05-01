@@ -1,10 +1,9 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { AuthState } from './types';
+import { supabase } from './lib/supabase';
 
 interface AuthContextType extends AuthState {
-  login: (username: string, userId: number) => void;
-  logout: () => void;
-  checkAuth: () => Promise<void>;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -16,34 +15,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isLoading: true,
   });
 
-  const checkAuth = async () => {
-    try {
-      const response = await fetch('/api/auth/me');
-      if (response.ok) {
-        const data = await response.json();
-        setState({ user: data.user, isAuthenticated: true, isLoading: false });
-      } else {
-        setState({ user: null, isAuthenticated: false, isLoading: false });
-      }
-    } catch (error) {
-      setState({ user: null, isAuthenticated: false, isLoading: false });
-    }
-  };
-
   useEffect(() => {
-    checkAuth();
+    // Check active sessions and sets the user
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setState({
+        user: session?.user ? { username: session.user.email?.split('@')[0] || 'User', userId: session.user.id as any } : null,
+        isAuthenticated: !!session,
+        isLoading: false,
+      });
+    });
+
+    // Listen for changes on auth state (log in, log out, etc.)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setState({
+        user: session?.user ? { username: session.user.email?.split('@')[0] || 'User', userId: session.user.id as any } : null,
+        isAuthenticated: !!session,
+        isLoading: false,
+      });
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  const login = (username: string, userId: number) => {
-    setState({ user: { username, userId }, isAuthenticated: true, isLoading: false });
-  };
-
-  const logout = () => {
-    setState({ user: null, isAuthenticated: false, isLoading: false });
+  const logout = async () => {
+    await supabase.auth.signOut();
   };
 
   return (
-    <AuthContext.Provider value={{ ...state, login, logout, checkAuth }}>
+    <AuthContext.Provider value={{ ...state, logout }}>
       {children}
     </AuthContext.Provider>
   );
